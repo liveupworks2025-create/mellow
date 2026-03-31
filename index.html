@@ -194,10 +194,19 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans JP',sans-serif
   .btn{font-size:11px;padding:6px 10px;}
   .logo-divider,.logo-sub{display:none;}
   .logo-em{font-size:16px;}
-  .period-bar{padding:10px 12px;gap:5px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-  .period-bar::-webkit-scrollbar{display:none;}
-  .period-btn{font-size:10px;padding:3px 7px;}
-  .period-label{font-size:9px;}
+  .period-bar{
+    padding:10px 12px;gap:5px;
+    flex-wrap:wrap;
+    overflow-x:visible;
+    max-height:none;
+  }
+  .period-label{
+    font-size:9px;
+    width:100%;
+    margin-bottom:2px;
+  }
+  .period-btn{font-size:11px;padding:5px 9px;}
+  .period-btn.active{font-weight:600;}
   .tab-nav{display:flex;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;white-space:nowrap;position:sticky;top:0;padding:0;gap:0;}
   .tab-nav::-webkit-scrollbar{display:none;}
   .tab-btn{flex-shrink:0;padding:12px 14px;font-size:11px;letter-spacing:0;}
