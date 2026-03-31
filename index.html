@@ -300,7 +300,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans JP',sans-serif
     <span id="data-range-label" class="header-range-label" style="font-size:11px;color:rgba(255,255,255,.4);font-family:'DM Mono',monospace;"></span>
     <button class="btn btn-ghost" onclick="document.getElementById('tab-upload').click()">📂 データ更新</button>
     <button class="btn btn-ghost" id="btn-compare-toggle" onclick="toggleCompareMode()">⇄ 比較</button>
-    <button class="btn btn-gold" onclick="runAIAnalysis()">✦ AI分析レポート</button>
+    <!-- AI分析ボタン非表示 -->
   </div>
 </header>
 
@@ -333,7 +333,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans JP',sans-serif
   <button class="tab-btn" onclick="switchTab('customer',this)">🔄 顧客分析</button>
   <button class="tab-btn" onclick="switchTab('route',this)">📍 経路・時間帯</button>
   <button class="tab-btn" id="tab-upload" onclick="switchTab('upload',this)">⬆ データ更新</button>
-  <button class="tab-btn" onclick="switchTab('report',this)">✦ AI分析レポート</button>
+  <!-- AIレポートタブ非表示 -->
 </nav>
 
 <!-- ===== MAIN ===== -->
@@ -1385,8 +1385,7 @@ function renderCompare(){
     +row('指名料',da.shimei_fee||0,db.shimei_fee||0,true)
     +row('割引額',Math.abs(da.discount||0),Math.abs(db.discount||0),true)
     +row('HPB経由',hpbA,hpbB,false,'件')
-    +row('電話経由',telA,telB,false,'件')
-    +row('店頭経由',shopA,shopB,false,'件')
+    +row('HPB以外',da.cnt-hpbA,db.cnt-hpbB,false,'件')
     +'</tbody></table></div>';
   ovEl.innerHTML=ovHTML;
 
