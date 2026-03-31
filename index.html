@@ -431,6 +431,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans JP',sans-serif
   <div id="compare-staff" style="display:none;"></div>
   <div id="normal-staff">
   <div class="kpi-strip" id="kpi-staff"></div>
+  <div class="card">
+    <div class="card-head"><span class="card-title">選択期間 スタッフ別明細</span></div>
+    <div class="card-desc">割引前施術売上・オプション売上・割引額・実売上を比較。</div>
+    <div style="overflow-x:auto;"><table class="data-table" id="staff-detail-table"></table></div>
+  </div>
   <div class="card-grid-2">
     <div class="card">
       <div class="card-head"><span class="card-title">スタッフ別 実売上推移</span></div>
@@ -460,11 +465,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans JP',sans-serif
       <div class="chart-wrap h200"><canvas id="ch-tanka"></canvas></div>
     </div>
   </div>
-  <div class="card">
-    <div class="card-head"><span class="card-title">選択期間 スタッフ別明細</span></div>
-    <div class="card-desc">割引前施術売上・オプション売上・割引額・実売上を比較。</div>
-    <div style="overflow-x:auto;"><table class="data-table" id="staff-detail-table"></table></div>
-  </div>
 </div><!-- /normal-staff -->
 </div>
 
@@ -485,7 +485,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Sans JP',sans-serif
   </div>
   <div class="card">
     <div class="card-head"><span class="card-title">新規顧客コホート分析</span></div>
-    <div class="card-desc">各月に初来店した新規顧客が、翌月・2ヶ月後にどれくらい再来店しているか。緑＝30%超、黄＝15〜30%、赤＝15%未満。</div>
+    <div class="card-desc">各月に初来店した新規顧客が、3ヶ月以内に再来店した割合（来店率）。<span style="color:var(--green)">●緑＝30%超</span>、<span style="color:var(--gold)">●黄＝15〜30%</span>、<span style="color:var(--red)">●赤＝15%未満</span>。最新3ヶ月は集計中。</div>
     <div style="overflow-x:auto;"><table class="cohort-tbl" id="cohort-table"></table></div>
   </div>
 </div>
@@ -876,14 +876,23 @@ function renderKPICustomer(){
   const repRate=tc>0?Math.round((tc-ts)/tc*100):0;
   const yms=getYMs(), lastYM=yms[yms.length-1];
   const active=DB.extra.active[lastYM]||0, unique=DB.extra.unique[lastYM]||0;
-  const cohorts=yms.filter(ym=>DB.extra.cohort[ym]&&DB.extra.cohort[ym].r1>0&&DB.extra.cohort[ym].new>0);
-  const avgR1=cohorts.length>0?Math.round(cohorts.reduce((s,ym)=>s+DB.extra.cohort[ym].r1/DB.extra.cohort[ym].new*100,0)/cohorts.length):0;
+  // 3ヶ月以内継続率（r2が確定している月のみ平均）
+  const latestYMAll=DB.months[DB.months.length-1];
+  const latestIdx=DB.months.indexOf(latestYMAll);
+  // 3ヶ月前以前の月のみ確定扱い（最新月-3以前）
+  const cohorts=yms.filter(ym=>{
+    const idx=DB.months.indexOf(ym);
+    return DB.extra.cohort[ym]&&DB.extra.cohort[ym].new>0&&(latestIdx-idx)>=3;
+  });
+  const avgR1=cohorts.length>0?Math.round(cohorts.reduce((s,ym)=>s+DB.extra.cohort[ym].r2/DB.extra.cohort[ym].new*100,0)/cohorts.length):0;
+  const hasEnoughData=cohorts.length>0;
+  const newRate=tc>0?Math.round(ts/tc*100):0;
   document.getElementById('kpi-customer').innerHTML=`
-    <div class="kpi-card"><div class="kpi-tag">再来率</div><div class="kpi-num">${repRate}<sup>%</sup></div><div class="kpi-note">来店全体ベース</div></div>
+    <div class="kpi-card highlight"><div class="kpi-tag">総来店人数</div><div class="kpi-num">${tc.toLocaleString()}<sup>人</sup></div><div class="kpi-note">${selectedYM==='ALL'?'全期間合計':'選択月の来店件数'}</div></div>
+    <div class="kpi-card"><div class="kpi-tag">再来客比率</div><div class="kpi-num">${repRate}<sup>%</sup></div><div class="kpi-note">再来客数 ÷ 来店件数合計</div></div>
+    <div class="kpi-card"><div class="kpi-tag">新規客比率</div><div class="kpi-num">${newRate}<sup>%</sup></div><div class="kpi-note">新規数 ÷ 来店件数合計</div></div>
     <div class="kpi-card"><div class="kpi-tag">新規獲得数</div><div class="kpi-num">${ts}<sup>人</sup></div><div class="kpi-note">売上明細ベース（全経路）</div></div>
-    <div class="kpi-card"><div class="kpi-tag">アクティブ顧客</div><div class="kpi-num">${active}<sup>人</sup></div><div class="kpi-note">最終月・前3ヶ月以内来店</div></div>
-    <div class="kpi-card"><div class="kpi-tag">ユニーク顧客</div><div class="kpi-num">${unique}<sup>人</sup></div><div class="kpi-note">最終月</div></div>
-    <div class="kpi-card"><div class="kpi-tag">新規→翌月継続率</div><div class="kpi-num">${avgR1}<sup>%</sup></div><div class="kpi-note">期間平均</div></div>
+    <div class="kpi-card"><div class="kpi-tag">新規→3ヶ月内の来店率</div><div class="kpi-num">${hasEnoughData?avgR1+'<sup>%</sup>':'- '}</div><div class="kpi-note">${hasEnoughData?'確定月の期間平均':'集計中の月を除く'}</div></div>
   `;
 }
 
@@ -977,13 +986,35 @@ function renderCustomerCharts(){
   const tot=Object.values(id).reduce((s,v)=>s+v,0);
   mkChart('ch-interval',{type:'bar',data:{labels:ks.map(k=>`${k}ヶ月`),datasets:[{label:'件数',data:ks.map(k=>id[k]||0),backgroundColor:ks.map((k,i)=>i===0?'rgba(139,105,20,.75)':'rgba(139,105,20,.28)'),borderRadius:3}]},options:{...TBASE,scales:{x:{...XBASE,ticks:{font:{size:11}}},y:{...YBASE}},plugins:{...TBASE.plugins,tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y}件 (${Math.round(ctx.parsed.y/tot*100)}%)`}}}}});
 
-  let chtm=`<thead><tr><th>獲得月</th><th>新規数</th><th>翌月継続</th><th>翌月継続率</th><th>2ヶ月後継続</th><th>2ヶ月後継続率</th></tr></thead><tbody>`;
-  DB.months.forEach(ym=>{
-    const c=DB.extra.cohort[ym]; if(!c) return;
-    const r1p=c.new>0?Math.round(c.r1/c.new*100):0, r2p=c.new>0?Math.round(c.r2/c.new*100):0;
-    const col1=r1p>=30?'var(--green)':r1p>=15?'var(--gold)':'var(--red)';
-    const col2=r2p>=30?'var(--green)':r2p>=15?'var(--gold)':'var(--red)';
-    chtm+=`<tr><td>${ym.slice(0,4)}/${ym.slice(4)}</td><td>${c.new}</td><td>${c.r1}</td><td style="color:${col1};font-weight:500">${r1p}%</td><td>${c.r2}</td><td style="color:${col2};font-weight:500">${r2p}%</td></tr>`;
+  var latestIdxC=DB.months.indexOf(DB.months[DB.months.length-1]);
+  let chtm='<thead><tr><th>獲得月</th><th>新規数</th><th>3ヶ月以内再来</th><th>3ヶ月継続率</th><th>状態</th></tr></thead><tbody>';
+  DB.months.forEach(function(ym){
+    var c=DB.extra.cohort[ym]; if(!c) return;
+    var idx=DB.months.indexOf(ym);
+    var monthsElapsed=latestIdxC-idx;
+    // 3ヶ月以内に1回でも来た人数（r1またはr2のmax）
+    var came3m=Math.max(c.r1||0,c.r2||0);
+    var r3p=c.new>0?Math.round(came3m/c.new*100):0;
+    var col=r3p>=30?'var(--green)':r3p>=15?'var(--gold)':'var(--red)';
+    var status,statusColor;
+    if(monthsElapsed<1){
+      status='集計中（1ヶ月未経過）'; statusColor='var(--ink4)'; col='var(--ink4)';
+    } else if(monthsElapsed<2){
+      status='集計中（2ヶ月未経過）'; statusColor='var(--ink4)'; col='var(--ink4)';
+    } else if(monthsElapsed<3){
+      status='集計中（3ヶ月未経過）'; statusColor='var(--gold)'; col='var(--gold)';
+    } else {
+      status='確定'; statusColor='var(--ink4)';
+    }
+    var rateStr=monthsElapsed>=1?('<span style="color:'+col+';font-weight:500">'+r3p+'%</span>'):'<span style="color:var(--ink4)">-</span>';
+    var cameStr=monthsElapsed>=1?came3m:'-';
+    chtm+='<tr>'
+      +'<td>'+ym.slice(0,4)+'/'+ym.slice(4)+'</td>'
+      +'<td>'+c.new+'</td>'
+      +'<td>'+cameStr+'</td>'
+      +'<td>'+rateStr+'</td>'
+      +'<td style="font-size:10px;color:'+statusColor+'">'+status+'</td>'
+      +'</tr>';
   });
   document.getElementById('cohort-table').innerHTML=chtm+'</tbody>';
   renderKPICustomer();
